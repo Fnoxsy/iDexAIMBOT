@@ -141,21 +141,31 @@ local function createWidget()
 	Instance.new("UICorner", frame)
 
 	widgetStatus = Instance.new("TextLabel", frame)
-	widgetStatus.Size = UDim2.new(1, 0, 0.5, 0)
+	widgetStatus.Size = UDim2.new(0.939, 0, 0.5, 0)
 	widgetStatus.BackgroundTransparency = 1
-	widgetStatus.Font = Enum.Font.GothamBold
+	widgetStatus.Font = Enum.Font.Nunito
 	widgetStatus.TextScaled = true
 	widgetStatus.TextColor3 = Color3.fromRGB(255, 0, 0)
 	widgetStatus.Text = "Aimbot: ВЫКЛ"
+	widgetStatus.TextXAlignment = Enum.TextXAlignment.Right
 
 	widgetTarget = Instance.new("TextLabel", frame)
-	widgetTarget.Size = UDim2.new(1, 0, 0.5, 0)
+	widgetTarget.Size = UDim2.new(0.939, 0, 0.5, 0)
 	widgetTarget.Position = UDim2.new(0, 0, 0.5, 0)
 	widgetTarget.BackgroundTransparency = 1
-	widgetTarget.Font = Enum.Font.Gotham
+	widgetTarget.Font = Enum.Font.Nunito
 	widgetTarget.TextScaled = true
 	widgetTarget.TextColor3 = Color3.fromRGB(200, 200, 200)
 	widgetTarget.Text = "Цель: Ближайший"
+	widgetTarget.TextXAlignment = Enum.TextXAlignment.Right
+	
+	local frame2 = Instance.new("Frame", frame)
+	frame2.Size = UDim2.new(0.03, 0, 1, 0)
+	frame2.Position = UDim2.new(0.97, 0, 0, 0)
+	frame2.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+	
+	local textSize = Instance.new("UITextSizeConstraint", widgetStatus)
+	textSize.MaxTextSize = 25
 end
 
 --======= УДАЛЕНИЕ =======--
@@ -211,6 +221,7 @@ local function createMenu()
 	toggleButton.Font = Enum.Font.GothamBold
 	toggleButton.Text = "Включить Aimbot"
 	Instance.new("UICorner", toggleButton)
+	toggleButton.UICorner.CornerRadius = UDim.new(1, 0)
 
 	partButton = Instance.new("TextButton", frame)
 	partButton.Position = UDim2.new(0.53, 0, 0.28, 0)
@@ -221,6 +232,7 @@ local function createMenu()
 	partButton.Font = Enum.Font.Gotham
 	partButton.Text = "Цель: " .. targetPart
 	Instance.new("UICorner", partButton)
+	partButton.UICorner.CornerRadius = UDim.new(1, 0)
 
 	local playerListFrame = Instance.new("ScrollingFrame", frame)
 	playerListFrame.Position = UDim2.new(0.05, 0, 0.43, 0)
@@ -246,6 +258,7 @@ local function createMenu()
 		autoBtn.TextSize = 16
 		autoBtn.Text = "🔄 Авто (ближайший игрок)"
 		Instance.new("UICorner", autoBtn)
+		autoBtn.UICorner.CornerRadius = UDim.new(1, 0)
 		autoBtn.MouseButton1Click:Connect(function()
 			autoTarget = true
 			removeHighlight()
@@ -265,6 +278,7 @@ local function createMenu()
 				btn.TextSize = 16
 				btn.Text = plr.Name
 				Instance.new("UICorner", btn)
+				btn.UICorner.CornerRadius = UDim.new(1, 0)
 				btn.MouseButton1Click:Connect(function()
 					autoTarget = false
 					lockedPlayer = plr
@@ -299,6 +313,7 @@ local function createMenu()
 	aimbotBindButton.Font = Enum.Font.Gotham
 	aimbotBindButton.Text = "Aimbot: " .. (switch == "мышка" and mousebind.Name or keybind.Name)
 	Instance.new("UICorner", aimbotBindButton)
+	aimbotBindButton.UICorner.CornerRadius = UDim.new(1, 0)
 
 	menuBindButton = Instance.new("TextButton", frame)
 	menuBindButton.Position = UDim2.new(0.63, 0, 0.8, 0)
@@ -309,6 +324,7 @@ local function createMenu()
 	menuBindButton.Font = Enum.Font.Gotham
 	menuBindButton.Text = "Меню: " .. toggleMenuKey.Name
 	Instance.new("UICorner", menuBindButton)
+	menuBindButton.UICorner.CornerRadius = UDim.new(1, 0)
 
 	local unload = Instance.new("TextButton", frame)
 	unload.Position = UDim2.new(0.05, 0, 0.93, 0)
@@ -319,6 +335,7 @@ local function createMenu()
 	unload.Font = Enum.Font.GothamBold
 	unload.Text = "UNLOAD (выгрузить)"
 	Instance.new("UICorner", unload)
+	unload.UICorner.CornerRadius = UDim.new(1, 0)
 	unload.MouseButton1Click:Connect(unloadScript)
 
 	-- кнопки
@@ -388,7 +405,7 @@ table.insert(connections, UserInputService.InputBegan:Connect(function(input, gp
 
 	-- включение аима
 	if (switch == "мышка" and input.UserInputType == mousebind)
-	or (switch == "клава" and input.KeyCode == keybind) then
+		or (switch == "клава" and input.KeyCode == keybind) then
 		aimEnabled = not aimEnabled
 		if aimEnabled then
 			if autoTarget then
