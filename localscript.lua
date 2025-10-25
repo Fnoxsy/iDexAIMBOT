@@ -2,6 +2,7 @@
 local mousebind = Enum.UserInputType.MouseButton3
 local keybind = Enum.KeyCode.Q
 local toggleMenuKey = Enum.KeyCode.L
+local toggleFlyKey = Enum.KeyCode.F
 local switch = "мышка" -- "мышка" или "клава"
 
 --======= СЕРВИСЫ =======--
@@ -15,14 +16,20 @@ local Camera = workspace.CurrentCamera
 
 --======= ПЕРЕМЕННЫЕ =======--
 local aimEnabled = false
+local flyEnabled = false
 local lockedPlayer = nil
 local targetPart = "Head"
 local autoTarget = true
 local guiOpen = false
 local waitingForAimbotBind = false
 local waitingForMenuBind = false
+local waitingForFlyBind = false
 local connections = {}
 local currentHighlight = nil
+
+local flyConnection
+local flyBodyVel
+local flyBodyGyro
 
 --======= ФУНКЦИИ =======--
 -- ближайший к прицелу игрок
@@ -94,18 +101,18 @@ local function aimAtTarget()
 end
 
 --======= UI =======--
-local statusLabel, toggleButton, partButton, frame
-local aimbotBindButton, menuBindButton
+local statusLabel, toggleButton, toggleFlyButton, partButton, frame
+local aimbotBindButton, menuBindButton, flyBindButton
 local widgetStatus, widgetTarget, hud
 
 local function updateStatus()
 	if statusLabel and toggleButton then
 		if aimEnabled then
-			statusLabel.Text = "Статус: Включен"
+			statusLabel.Text = "Статус Aimbot: Включен"
 			statusLabel.TextColor3 = Color3.fromRGB(0,255,0)
 			toggleButton.Text = "Выключить Aimbot"
 		else
-			statusLabel.Text = "Статус: Выключен"
+			statusLabel.Text = "Статус Aimbot: Выключен"
 			statusLabel.TextColor3 = Color3.fromRGB(255,0,0)
 			toggleButton.Text = "Включить Aimbot"
 		end
@@ -116,11 +123,93 @@ local function updateStatus()
 		widgetStatus.TextColor3 = aimEnabled and Color3.fromRGB(0,255,0) or Color3.fromRGB(255,0,0)
 	end
 
+	if toggleFlyButton then
+		if flyEnabled then
+			toggleFlyButton.Text = "Выключить Fly"
+		else
+			toggleFlyButton.Text = "Включить Fly"
+		end
+	end
+
 	if widgetTarget then
 		if autoTarget then
 			widgetTarget.Text = "Цель: Ближайший"
 		else
 			widgetTarget.Text = "Цель: " .. (lockedPlayer and lockedPlayer.Name or "нет")
+		end
+	end
+end
+
+local function toggleFly(enabled, speed)
+	local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	local hrp = character:WaitForChild("HumanoidRootPart")
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+	if enabled then
+		if humanoid then
+			humanoid.PlatformStand = true
+		end
+
+		-- создаём силы для полёта
+		flyBodyVel = Instance.new("BodyVelocity")
+		flyBodyVel.MaxForce = Vector3.new(400000, 400000, 400000)
+		flyBodyVel.Velocity = Vector3.zero
+		flyBodyVel.P = 9e4
+		flyBodyVel.Parent = hrp
+
+		flyBodyGyro = Instance.new("BodyGyro")
+		flyBodyGyro.MaxTorque = Vector3.new(400000, 400000, 400000)
+		flyBodyGyro.P = 9e4
+		flyBodyGyro.CFrame = hrp.CFrame
+		flyBodyGyro.Parent = hrp
+
+		-- подключаем управление
+		flyConnection = RunService.Heartbeat:Connect(function(dt)
+			local move = Vector3.zero
+			local cam = workspace.CurrentCamera
+
+			if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+				move = move + cam.CFrame.LookVector
+			end
+			if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+				move = move - cam.CFrame.LookVector
+			end
+			if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+				move = move - cam.CFrame.RightVector
+			end
+			if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+				move = move + cam.CFrame.RightVector
+			end
+			if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+				move = move + Vector3.new(0, 1, 0)
+			end
+			if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+				move = move - Vector3.new(0, 1, 0)
+			end
+
+			if move.Magnitude > 0 then
+				move = move.Unit * speed
+			end
+
+			flyBodyVel.Velocity = move
+			flyBodyGyro.CFrame = cam.CFrame
+		end)
+	else
+		-- отключаем полёт
+		if flyConnection then
+			flyConnection:Disconnect()
+			flyConnection = nil
+		end
+		if flyBodyVel then
+			flyBodyVel:Destroy()
+			flyBodyVel = nil
+		end
+		if flyBodyGyro then
+			flyBodyGyro:Destroy()
+			flyBodyGyro = nil
+		end
+		if humanoid then
+			humanoid.PlatformStand = false
 		end
 	end
 end
@@ -196,7 +285,7 @@ local function createMenu()
 	Instance.new("UICorner", frame)
 
 	local title = Instance.new("TextLabel", frame)
-	title.Text = "iDex AIM"
+	title.Text = "iDex cheats"
 	title.Size = UDim2.new(1, 0, 0.15, 0)
 	title.BackgroundTransparency = 1
 	title.Font = Enum.Font.GothamBold
@@ -210,11 +299,11 @@ local function createMenu()
 	statusLabel.TextScaled = true
 	statusLabel.BackgroundTransparency = 1
 	statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-	statusLabel.Text = "Статус: Выключен"
+	statusLabel.Text = "Статус Aimbot: Выключен"
 
 	toggleButton = Instance.new("TextButton", frame)
-	toggleButton.Position = UDim2.new(0.05, 0, 0.28, 0)
-	toggleButton.Size = UDim2.new(0.42, 0, 0.12, 0)
+	toggleButton.Position = UDim2.new(0.05, 0,0.28, 0)
+	toggleButton.Size = UDim2.new(0.273, 0,0.12, 0)
 	toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 	toggleButton.TextColor3 = Color3.new(1,1,1)
 	toggleButton.TextScaled = true
@@ -223,9 +312,20 @@ local function createMenu()
 	Instance.new("UICorner", toggleButton)
 	toggleButton.UICorner.CornerRadius = UDim.new(1, 0)
 
+	toggleFlyButton = Instance.new("TextButton", frame)
+	toggleFlyButton.Position = UDim2.new(0.675, 0,0.28, 0)
+	toggleFlyButton.Size = UDim2.new(0.273, 0,0.12, 0)
+	toggleFlyButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+	toggleFlyButton.TextColor3 = Color3.new(1,1,1)
+	toggleFlyButton.TextScaled = true
+	toggleFlyButton.Font = Enum.Font.GothamBold
+	toggleFlyButton.Text = "Включить Fly"
+	Instance.new("UICorner", toggleFlyButton)
+	toggleFlyButton.UICorner.CornerRadius = UDim.new(1, 0)
+
 	partButton = Instance.new("TextButton", frame)
-	partButton.Position = UDim2.new(0.53, 0, 0.28, 0)
-	partButton.Size = UDim2.new(0.42, 0, 0.12, 0)
+	partButton.Position = UDim2.new(0.348, 0,0.28, 0)
+	partButton.Size = UDim2.new(0.302, 0,0.12, 0)
 	partButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
 	partButton.TextColor3 = Color3.new(1,1,1)
 	partButton.TextScaled = true
@@ -296,8 +396,8 @@ local function createMenu()
 
 	-- бинды + unload
 	local bindsTitle = Instance.new("TextLabel", frame)
-	bindsTitle.Position = UDim2.new(0.05, 0, 0.8, 0)
-	bindsTitle.Size = UDim2.new(0.3, 0, 0.1, 0)
+	bindsTitle.Position = UDim2.new(0, 0, 0.8, 0)
+	bindsTitle.Size = UDim2.new(0.223, 0,0.1, 0)
 	bindsTitle.BackgroundTransparency = 1
 	bindsTitle.Font = Enum.Font.GothamBold
 	bindsTitle.TextScaled = true
@@ -305,8 +405,8 @@ local function createMenu()
 	bindsTitle.Text = "Бинды:"
 
 	aimbotBindButton = Instance.new("TextButton", frame)
-	aimbotBindButton.Position = UDim2.new(0.35, 0, 0.8, 0)
-	aimbotBindButton.Size = UDim2.new(0.25, 0, 0.1, 0)
+	aimbotBindButton.Position = UDim2.new(0.241, 0,0.8, 0)
+	aimbotBindButton.Size = UDim2.new(0.282, 0,0.1, 0)
 	aimbotBindButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 	aimbotBindButton.TextColor3 = Color3.new(1,1,1)
 	aimbotBindButton.TextScaled = true
@@ -316,8 +416,8 @@ local function createMenu()
 	aimbotBindButton.UICorner.CornerRadius = UDim.new(1, 0)
 
 	menuBindButton = Instance.new("TextButton", frame)
-	menuBindButton.Position = UDim2.new(0.63, 0, 0.8, 0)
-	menuBindButton.Size = UDim2.new(0.3, 0, 0.1, 0)
+	menuBindButton.Position = UDim2.new(0.523, 0,0.8, 0)
+	menuBindButton.Size = UDim2.new(0.257, 0,0.1, 0)
 	menuBindButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 	menuBindButton.TextColor3 = Color3.new(1,1,1)
 	menuBindButton.TextScaled = true
@@ -325,6 +425,17 @@ local function createMenu()
 	menuBindButton.Text = "Меню: " .. toggleMenuKey.Name
 	Instance.new("UICorner", menuBindButton)
 	menuBindButton.UICorner.CornerRadius = UDim.new(1, 0)
+
+	flyBindButton = Instance.new("TextButton", frame)
+	flyBindButton.Position = UDim2.new(0.796, 0,0.8, 0)
+	flyBindButton.Size = UDim2.new(0.204, 0,0.1, 0)
+	flyBindButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	flyBindButton.TextColor3 = Color3.new(1,1,1)
+	flyBindButton.TextScaled = true
+	flyBindButton.Font = Enum.Font.Gotham
+	flyBindButton.Text = "Fly: " .. toggleFlyKey.Name
+	Instance.new("UICorner", flyBindButton)
+	flyBindButton.UICorner.CornerRadius = UDim.new(1, 0)
 
 	local unload = Instance.new("TextButton", frame)
 	unload.Position = UDim2.new(0.05, 0, 0.93, 0)
@@ -351,6 +462,16 @@ local function createMenu()
 		end
 		updateStatus()
 	end)
+	
+	toggleFlyButton.MouseButton1Click:Connect(function()
+		flyEnabled = not flyEnabled
+		if flyEnabled then
+			toggleFly(false)
+		else
+			toggleFly(true, 60)
+		end
+		updateStatus()
+	end)
 
 	partButton.MouseButton1Click:Connect(function()
 		targetPart = (targetPart == "Head") and "HumanoidRootPart" or "Head"
@@ -365,6 +486,10 @@ local function createMenu()
 	menuBindButton.MouseButton1Click:Connect(function()
 		waitingForMenuBind = true
 		menuBindButton.Text = "Нажмите клавишу..."
+	end)
+	flyBindButton.MouseButton1Click:Connect(function()
+		waitingForFlyBind = true
+		flyBindButton.Text = "Нажмите клавишу..."
 	end)
 end
 
@@ -403,6 +528,15 @@ table.insert(connections, UserInputService.InputBegan:Connect(function(input, gp
 		return
 	end
 
+	if waitingForFlyBind then
+		toggleFlyKey = input.KeyCode
+		waitingForFlyBind = false
+		if flyBindButton then
+			flyBindButton.Text = "Fly: " .. toggleFlyKey.Name
+		end
+		return
+	end
+
 	-- включение аима
 	if (switch == "мышка" and input.UserInputType == mousebind)
 		or (switch == "клава" and input.KeyCode == keybind) then
@@ -427,6 +561,13 @@ table.insert(connections, UserInputService.InputBegan:Connect(function(input, gp
 		if not guiOpen then
 			task.delay(0.3, function() if not guiOpen then frame.Visible = false end end)
 		end
+	end
+	
+	-- включение fly
+	if input.KeyCode == toggleFlyKey then
+		flyEnabled = not flyEnabled
+		toggleFly(flyEnabled, 60)
+		updateStatus()
 	end
 end))
 
