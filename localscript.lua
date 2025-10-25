@@ -468,7 +468,7 @@ local function createMenu()
 		if flyEnabled then
 			toggleFly(false)
 		else
-			toggleFly(true, 60)
+			toggleFly(true, 80)
 		end
 		updateStatus()
 	end)
@@ -566,7 +566,7 @@ table.insert(connections, UserInputService.InputBegan:Connect(function(input, gp
 	-- включение fly
 	if input.KeyCode == toggleFlyKey then
 		flyEnabled = not flyEnabled
-		toggleFly(flyEnabled, 60)
+		toggleFly(flyEnabled, 80)
 		updateStatus()
 	end
 end))
